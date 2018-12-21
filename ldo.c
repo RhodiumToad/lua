@@ -677,7 +677,7 @@ LUA_API int lua_resume (lua_State *L, lua_State *from, int nargs,
   else  /* correct 'nCcalls' for this thread */
     L->nCcalls = from->nCcalls - from->nci + L->nci + LUAL_COROCSTK;
   if (L->nCcalls >= LUAI_MAXCCALLS)
-    return resume_error(L, "C stack overflow", nargs);
+    return resume_error(L, luaE_stackmsg("in resume", L->nCcalls), nargs);
   luai_userstateresume(L, nargs);
   L->nny = 0;  /* allow yields */
   api_checknelems(L, (L->status == LUA_OK) ? nargs + 1 : nargs);
@@ -825,5 +825,3 @@ int luaD_protectedparser (lua_State *L, ZIO *z, const char *name,
   L->nny--;
   return status;
 }
-
-

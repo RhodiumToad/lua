@@ -12,6 +12,7 @@
 
 #include <stddef.h>
 #include <string.h>
+#include <stdio.h>
 
 #include "lua.h"
 
@@ -95,7 +96,16 @@ void luaE_setdebt (global_State *g, l_mem debt) {
   g->GCdebt = debt;
 }
 
-
+static char *d_stackbase = NULL;
+const char *luaE_stackmsg(const char *extra, int nCcalls)
+{
+  static char buf[1024];
+  char c = 0;
+  long depth = (long) (d_stackbase - &c);
+  snprintf(buf, 1023, "C stack overflow%s%s at call depth %d, stack %ld bytes [%p .. %p]",
+		   (extra && *extra ? " " : ""), (extra ? extra : ""), nCcalls, depth, (void*)&c, (void*)d_stackbase);
+  return buf;
+}
 /*
 ** Increment count of "C calls" and check for overflows. In case of
 ** a stack overflow, check appropriate error ("regular" overflow or
@@ -107,7 +117,7 @@ void luaE_setdebt (global_State *g, l_mem debt) {
 void luaE_incCcalls (lua_State *L) {
   if (++L->nCcalls >= LUAI_MAXCCALLS) {
     if (L->nCcalls == LUAI_MAXCCALLS)
-      luaG_runerror(L, "C stack overflow");
+	  luaG_runerror(L, luaE_stackmsg(NULL, L->nCcalls));
     else if (L->nCcalls >= (LUAI_MAXCCALLS + (LUAI_MAXCCALLS>>3)))
       luaD_throw(L, LUA_ERRERR);  /* error while handing stack error */
   }
@@ -338,6 +348,8 @@ LUA_API lua_State *lua_newstate (lua_Alloc f, void *ud) {
   global_State *g;
   LG *l = cast(LG *, (*f)(ud, NULL, LUA_TTHREAD, sizeof(LG)));
   if (l == NULL) return NULL;
+  if (!d_stackbase)
+	d_stackbase = (char *) &L;
   L = &l->l.l;
   g = &l->g;
   L->tt = LUA_TTHREAD;
@@ -388,5 +400,3 @@ LUA_API void lua_close (lua_State *L) {
   lua_lock(L);
   close_state(L);
 }
-
-

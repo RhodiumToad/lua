@@ -285,6 +285,7 @@ LUAI_FUNC void luaE_freeCI (lua_State *L);
 LUAI_FUNC void luaE_shrinkCI (lua_State *L);
 LUAI_FUNC void luaE_incCcalls (lua_State *L);
 
+LUAI_FUNC const char *luaE_stackmsg(const char *extra, int nCcalls);
+
 
 #endif
-
